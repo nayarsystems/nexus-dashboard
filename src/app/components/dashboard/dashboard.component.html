@@ -1,3 +1,11 @@
-<p>
-  dashboard works!
-</p>
+<md-card>
+  <div id="line_chart"
+      [chartData]="line_ChartData"
+      [chartOptions] = "line_ChartOptions"
+       chartType="LineChart"
+       GoogleChart/>
+</md-card>
+
+<md-card>
+  Number of tasks active: {{ tasksCount }}
+</md-card>

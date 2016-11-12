@@ -17,6 +17,8 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { UserListComponent } from './components/user-list/user-list.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
 
+import { ChartsModule } from 'ng2-charts/ng2-charts';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -32,7 +34,8 @@ import { TaskListComponent } from './components/task-list/task-list.component';
     FormsModule,
     ReactiveFormsModule,
     HttpModule,
-    MaterialModule.forRoot()
+    MaterialModule.forRoot(),
+    ChartsModule
   ],
   providers: [
     appRoutingProviders,

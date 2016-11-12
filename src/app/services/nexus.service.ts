@@ -34,22 +34,60 @@ export class NexusService {
         return this.client;
     }
 
-    taskPush(path: string, params: any, timeout: number) {
+    taskPush(path: string, params: any, timeout: number): Promise<any> {
         return new Promise((res, rej) => {
             this.client.then(c => {
                 if (c) {
                     c.taskPush(path, params, timeout, (response, err) => {
                         if (err) {
-                            console.log('Error in taskpush:', JSON.stringify(err));
+                            console.log('Error in taskpush:', err);
                             rej(err);
                         } else {
                             res(response);
                         }
                     });
                 } else {
-                    return rej('No Nexus Client');
+                    rej('No Nexus Client');
                 }
             });
         });
+    }
+    
+    userList(): Promise<any[]> {
+        return new Promise((res, rej) => {
+            this.client.then(c => {
+                if (c) {
+                    c.userList("", 0, 0, (response, err) => {
+                        if (err) {
+                            console.log('Error in userList:', err);
+                            rej(err);
+                        } else {
+                            res(response);
+                        }
+                    })
+                } else {
+                    rej('No Nexus Client');
+                }
+            })
+        })
+    }
+    
+    taskList(): Promise<any[]> {
+        return new Promise((res, rej) => {
+            this.client.then(c => {
+                if (c) {
+                    c.taskList("", 0, 0, (response, err) => {
+                        if (err) {
+                            console.log('Error in taskList:', err);
+                            rej(err);
+                        } else {
+                            res(response);
+                        }
+                    })
+                } else {
+                    rej('No Nexus Client');
+                }
+            })
+        })
     }
 }
