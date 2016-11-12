@@ -5,9 +5,7 @@ import { Observable, Subject } from 'rxjs/Rx';
 export class EventBusService {
   bus: Subject<any> = new Subject<any>();
 
-  constructor() {
-    console.log('Event bus service loaded');
-  }
+  constructor() { }
   
   dispatch(data: any) {
     this.bus.next(data);

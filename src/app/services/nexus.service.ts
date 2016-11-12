@@ -9,21 +9,18 @@ declare var nexus: any;
 export class NexusService {
     client: any;
 
-    constructor() {
-        console.log(environment.nexus.url);
-    }
+    constructor() { }
 
     login(user: string, password: string) {
         this.client = new Promise((res, rej) => {
             nexus.dial(environment.nexus.url, function (client, err) {
                 if (!err) {
                     client.login(user, password, (response, error) => {
-                        console.log(response, error);
                         if (!error) {
                             console.log('Login successful.');
                             res(client);
                         } else {
-                            console.log('Could not login using OTP: ', error);
+                            console.log('Could not login: ', error);
                             client.close();
                             rej(false);
                         }

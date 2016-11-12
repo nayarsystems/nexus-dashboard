@@ -29,7 +29,6 @@ export class LoginComponent implements OnInit {
   }
 
   login() {
-    console.log('Submitted login');
     if (this.loginForm.valid) {
       this.nexus.login(this.loginForm.value.username, this.loginForm.value.password)
         .then(() => {

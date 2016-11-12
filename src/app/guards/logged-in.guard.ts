@@ -10,7 +10,6 @@ export class LoggedInGuard implements CanActivate {
   }
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
-    console.log('Route', route);
     if (state.url !== '' && !this.logged) {
       this.router.navigate(['/']);
       return false;
@@ -19,7 +18,6 @@ export class LoggedInGuard implements CanActivate {
   }
 
   listenEventBus() {
-    console.log('LoggedInGuard loaded');
     this.bus.listen('logged').subscribe((result) => {
       this.logged = result.value;
     });

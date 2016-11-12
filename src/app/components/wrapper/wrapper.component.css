@@ -1,3 +1,7 @@
+.app-content {
+  height: 100vh;
+}
+
 md-sidenav {
   width: 200px;
 }

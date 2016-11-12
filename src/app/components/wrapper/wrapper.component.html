@@ -1,8 +1,9 @@
 <md-sidenav-layout [class.m2app-dark]="isDarkTheme">
 
   <md-sidenav #sidenav mode="side" class="app-sidenav">
-    <button md-button>User list</button>
-    <button md-button>Task list</button>
+    <button routerLink="/dashboard" md-button>Dashboard</button>
+    <button routerLink="/userlist" md-button>User list</button>
+    <button routerLink="/tasklist" md-button>Task list</button>
   </md-sidenav>
 
   <md-toolbar color="primary">
