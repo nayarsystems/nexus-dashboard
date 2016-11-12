@@ -1,3 +1,7 @@
+md-sidenav {
+  width: 200px;
+}
+
 md-sidenav-layout.m2app-dark {
   background: black;
 }
@@ -11,8 +15,12 @@ md-sidenav-layout.m2app-dark {
 }
 
 .app-sidenav {
-  padding: 10px;
   min-width: 100px;
+}
+
+.app-sidenav > button {
+  width: 100%;
+  text-align: left;
 }
 
 .app-content md-checkbox {

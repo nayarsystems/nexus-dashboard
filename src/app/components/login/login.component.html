@@ -1,13 +1,7 @@
-<md-card>
-  <button md-button>FLAT</button>
-  <button md-raised-button md-tooltip="This is a tooltip!">RAISED</button>
-  <button md-raised-button color="primary">PRIMARY RAISED</button>
-  <button md-raised-button color="accent">ACCENT RAISED</button>
+<md-card class="app-input-section login">
+  <form [formGroup]="loginForm" (ngSubmit)="login()">
+    <md-input formControlName="username" placeholder="Username"></md-input>
+    <md-input formControlName="password" placeholder="Password"></md-input>
+    <button md-button type="submit">Log In</button>
+  </form>
 </md-card>
-
-
-<md-card class="app-input-section">
-  <md-input placeholder="First name"></md-input>
-</md-card>
-
-<a [routerLink]="'/dashboard'">Dashboard</a>
