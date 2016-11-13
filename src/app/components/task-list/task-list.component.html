@@ -1,3 +1,20 @@
-<p>
-  task-list works!
-</p>
+<md-card>
+  <table class="table table-stripped">
+    <thead>
+      <tr>
+        <th>Path</th>
+        <th>Method</th>
+        <th>User</th>
+        <th>State</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let task of tasks">
+        <td>{{ task.Path }}</td>
+        <td>{{ task.Method }}</td>
+        <td>{{ task.User }}</td>
+        <td>{{ task.Stat }}</td>
+      </tr>
+    </tbody>
+  </table>
+</md-card>

@@ -10,7 +10,7 @@ import { NexusService } from '../../services/nexus.service';
 export class DashboardComponent implements OnInit {
   usersCount: number;
   tasksCount: number;
-
+  // TODO get morris JS and try to show graphs with evolution of users connected and tasks
   constructor(
     private nexus: NexusService
   ) {

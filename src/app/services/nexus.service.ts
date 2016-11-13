@@ -53,13 +53,13 @@ export class NexusService {
         });
     }
     
-    userList(): Promise<any[]> {
+    genericList(type: string): Promise<any[]> {
         return new Promise((res, rej) => {
             this.client.then(c => {
                 if (c) {
-                    c.userList("", 0, 0, (response, err) => {
+                    c[type]("", 0, 0, (response, err) => {
                         if (err) {
-                            console.log('Error in userList:', err);
+                            console.log('Error in ' + type + ':', err);
                             rej(err);
                         } else {
                             res(response);
@@ -72,22 +72,6 @@ export class NexusService {
         })
     }
     
-    taskList(): Promise<any[]> {
-        return new Promise((res, rej) => {
-            this.client.then(c => {
-                if (c) {
-                    c.taskList("", 0, 0, (response, err) => {
-                        if (err) {
-                            console.log('Error in taskList:', err);
-                            rej(err);
-                        } else {
-                            res(response);
-                        }
-                    })
-                } else {
-                    rej('No Nexus Client');
-                }
-            })
-        })
-    }
+    userList(): Promise<any[]> { return this.genericList('userList'); }
+    taskList(): Promise<any[]> { return this.genericList('taskList'); }
 }

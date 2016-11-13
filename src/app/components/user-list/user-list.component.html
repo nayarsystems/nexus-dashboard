@@ -1,3 +1,20 @@
-<p>
-  user-list works!
-</p>
+<md-card>
+  <table class="table table-stripped">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Templates</th>
+        <th>Whitelist</th>
+        <th>Blacklist</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users">
+        <td>{{ user.User }}</td>
+        <td>{{ user.Templates }}</td>
+        <td>{{ user.Whitelist }}</td>
+        <td>{{ user.Blacklist }}</td>
+      </tr>
+    </tbody>
+  </table>
+</md-card>
