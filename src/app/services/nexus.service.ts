@@ -74,4 +74,5 @@ export class NexusService {
     
     userList(): Promise<any[]> { return this.genericList('userList'); }
     taskList(): Promise<any[]> { return this.genericList('taskList'); }
+    sessionList() : Promise<any[]> { return this.genericList('sessionList'); }
 }
