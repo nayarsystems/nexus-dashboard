@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
 import { NexusService } from '../../services/nexus.service';
+import { GraphsService } from '../../services/graphs.service';
 
 declare function graphsInit(): any;
 
@@ -16,10 +17,10 @@ export class DashboardComponent implements OnInit {
   tasksData: any[];
   tasksCounter: number;
   tasksChart: any;
-  createLineChart: any;
 
   constructor(
-    private nexus: NexusService
+    private nexus: NexusService,
+    private graphs: GraphsService
   ) {
     this.sessionsData = [];
     this.tasksData = [];
@@ -31,9 +32,8 @@ export class DashboardComponent implements OnInit {
     this.updatesessionsChart();
     this.updateTasksChart();
     
-    this.createLineChart = graphsInit();
-    this.sessionsChart = this.createLineChart('sessions', this.sessionsData, 'y', ['a'], ['Numero de usuarios'], ['0.9'], ['#ffffff'], ['#999999'], ['#97BE0C']);
-    this.tasksChart = this.createLineChart('tasks', this.tasksData, 'y', ['a'], ['Numero de tareas'], ['0.9'], ['#ffffff'], ['#999999'], ['#97BE0C']);
+    this.sessionsChart = this.graphs.createLineChart('sessions', this.sessionsData, ['Numero de usuarios']);
+    this.tasksChart = this.graphs.createLineChart('tasks', this.tasksData, ['Numero de tareas']);
   }
   
   updatesessionsChart() {
@@ -68,9 +68,5 @@ export class DashboardComponent implements OnInit {
     return this.nexus.taskList()
       .then(tasks => tasks.length);
   }
-
-
-
-
 
 }

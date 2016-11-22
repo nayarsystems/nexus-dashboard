@@ -8,6 +8,7 @@ import { routing, appRoutingProviders } from './app.routes';
 
 import { NexusService } from './services/nexus.service';
 import { EventBusService } from './services/event-bus.service';
+import { GraphsService } from './services/graphs.service';
 import { LoggedInGuard } from './guards/logged-in.guard';
 
 import { AppComponent } from './app.component';
@@ -41,6 +42,7 @@ import { ChartsModule } from 'ng2-charts/ng2-charts';
     appRoutingProviders,
     NexusService,
     EventBusService,
+    GraphsService,
     LoggedInGuard
   ],
   bootstrap: [AppComponent]
