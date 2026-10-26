@@ -1,0 +1,38 @@
+<mat-card>
+  <h2>Push</h2>
+  <mat-card-content>
+    @if (pushParams) {
+      <json-editor [(ngModel)]="pushParams" [config]="{ mode: 'code' }" />
+    }
+
+    <form [formGroup]="form" style="margin-top: 20px; display: flex; justify-content: space-between;">
+      <mat-form-field style="width: 40%;">
+        <input matInput [placeholder]="'Path' | translate" formControlName="path" />
+      </mat-form-field>
+      <div style="width: 40%;">
+        <button mat-raised-button [disabled]="form.invalid" color="primary" type="button" (click)="push()">
+          Push
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+@if (result || error) {
+  <mat-card>
+    @if (result) {
+      <h2 translate>Result</h2>
+    }
+    @if (error) {
+      <h2 translate>Error</h2>
+    }
+    <mat-card-content>
+      @if (result) {
+        <pre>{{ result }}</pre>
+      }
+      @if (error) {
+        <pre>{{ error }}</pre>
+      }
+    </mat-card-content>
+  </mat-card>
+}

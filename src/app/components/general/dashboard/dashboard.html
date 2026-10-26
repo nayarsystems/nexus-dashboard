@@ -1,0 +1,73 @@
+<mat-grid-list cols="3" rowHeight="200px">
+  <mat-grid-tile [colspan]="1" [rowspan]="1">
+    <mat-card class="dashboard-card">
+      <mat-card-header>
+        <h3 translate>Services</h3>
+      </mat-card-header>
+      <mat-card-content>
+        @if (!loadingServices) {
+          <h2>{{ services }} / {{ totalServices }}</h2>
+        }
+        @if (loadingServices) {
+          <mat-spinner class="spinner" [diameter]="55" [strokeWidth]="5" />
+        }
+        <p translate>active services</p>
+      </mat-card-content>
+    </mat-card>
+  </mat-grid-tile>
+
+  <mat-grid-tile [colspan]="1" [rowspan]="1">
+    <mat-card class="dashboard-card">
+      <mat-card-header>
+        <h3 translate>Users</h3>
+      </mat-card-header>
+      <mat-card-content>
+        @if (!loadingUsers) {
+          <h2>{{ users }}</h2>
+        }
+        @if (loadingUsers) {
+          <mat-spinner class="spinner" [diameter]="55" [strokeWidth]="5" />
+        }
+        <p translate>total users</p>
+      </mat-card-content>
+    </mat-card>
+  </mat-grid-tile>
+
+  <mat-grid-tile [colspan]="1" [rowspan]="1">
+    <mat-card class="dashboard-card">
+      <mat-card-header>
+        <h3 translate>Tasks</h3>
+      </mat-card-header>
+      <mat-card-content>
+        @if (!loadingTasks) {
+          <h2>{{ tasks }}</h2>
+        }
+        @if (loadingTasks) {
+          <mat-spinner class="spinner" [diameter]="55" [strokeWidth]="5" />
+        }
+        <p translate>active tasks</p>
+      </mat-card-content>
+    </mat-card>
+  </mat-grid-tile>
+
+  <mat-grid-tile [colspan]="1" [rowspan]="1"></mat-grid-tile>
+  <mat-grid-tile [colspan]="1" [rowspan]="1">
+    <mat-card class="dashboard-card">
+      <mat-card-header>
+        <h3 translate>Nodes</h3>
+      </mat-card-header>
+      <mat-card-content>
+        @if (!loadingNodes) {
+          <h2>{{ nodes.count }}</h2>
+        }
+        @if (loadingNodes) {
+          <mat-spinner class="spinner" [diameter]="55" [strokeWidth]="5" />
+        }
+        @if (!loadingNodes) {
+          <p>{{ formatLoadFn(nodes.Load) }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  </mat-grid-tile>
+  <mat-grid-tile [colspan]="1" [rowspan]="1"></mat-grid-tile>
+</mat-grid-list>

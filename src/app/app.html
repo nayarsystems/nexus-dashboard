@@ -1,0 +1,58 @@
+<mat-toolbar color="primary">
+  <button mat-icon-button type="button">
+    <mat-icon (click)="sidenav.toggle()">menu</mat-icon>
+  </button>
+  <span>{{ nexusHost }}</span>
+  <span class="middle-spacer"></span>
+  @if (nexus.isLogged()) {
+    <div class="nexus-version">
+      <span>{{ 'Nexus version' | translate }}: {{ nexus.version() }}</span>
+      <br />
+      <span>{{ 'Client version' | translate }}: {{ nexus.clientVersion() }}</span>
+    </div>
+  }
+
+  <button mat-icon-button type="button" [matMenuTriggerFor]="menu">
+    <mat-icon>translate</mat-icon>
+  </button>
+  <mat-menu #menu="matMenu">
+    <button mat-menu-item type="button" (click)="setLang('en')">English</button>
+    <button mat-menu-item type="button" (click)="setLang('ca')">Català</button>
+    <button mat-menu-item type="button" (click)="setLang('es')">Castellano</button>
+  </mat-menu>
+
+  @if (nexus.isLogged()) {
+    <button mat-icon-button type="button" (click)="logout()">
+      <mat-icon>exit_to_app</mat-icon>
+    </button>
+  }
+</mat-toolbar>
+
+<mat-sidenav-container style="height: calc(100vh - 64px);">
+  <mat-sidenav #sidenav mode="side">
+    <mat-list>
+      @for (linkGroup of linkGroups; track linkGroup.name) {
+        <h2 mat-subheader>{{ linkGroup.name | translate }}</h2>
+
+        @for (link of linkGroup.links; track link.route) {
+          <!-- The legacy nested button > mat-list-item markup does not
+               project icons on Material 3; a plain icon+label button renders
+               the same menu look. -->
+          <button
+            mat-button
+            class="menu-button"
+            routerLinkActive="active-link"
+            [routerLink]="link.route"
+          >
+            <mat-icon>{{ link.icon }}</mat-icon>
+            <span>{{ link.name | translate }}</span>
+          </button>
+        }
+
+        <mat-divider />
+      }
+    </mat-list>
+  </mat-sidenav>
+
+  <router-outlet />
+</mat-sidenav-container>

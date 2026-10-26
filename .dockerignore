@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.angular
+node_modules
+dist
+*.md
+.dockerignore
+.editorconfig
+.prettierrc
+docker-compose.yml
+npm-debug.log

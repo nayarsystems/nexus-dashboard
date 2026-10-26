@@ -1,0 +1,5 @@
+// Copy this file to environment.local.ts (gitignored) and set the
+// nexus ws URL you develop against. Never commit real URLs. Image
+// builds do NOT read this file: the Dockerfile generates
+// environment.local.ts from the NEXUS_URL build-arg instead.
+export const host = '';

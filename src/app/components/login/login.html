@@ -1,0 +1,39 @@
+<mat-card class="login-card">
+  <mat-card-header>
+    <mat-card-title>
+      <h2 translate>Login</h2>
+    </mat-card-title>
+  </mat-card-header>
+
+  @if (!loggingIn) {
+    <mat-card-content>
+      <form [formGroup]="form">
+        <mat-form-field style="width: 100%;">
+          <input matInput [placeholder]="'Username' | translate" formControlName="user" />
+        </mat-form-field>
+
+        <mat-form-field style="width: 100%;">
+          <input
+            matInput
+            [placeholder]="'Enter your password' | translate"
+            [type]="hide ? 'password' : 'text'"
+            formControlName="password"
+          />
+          <mat-icon matSuffix (click)="hide = !hide">{{ hide ? 'visibility' : 'visibility_off' }}</mat-icon>
+        </mat-form-field>
+
+        <div class="pull-right-inner">
+          <button mat-raised-button color="primary" [disabled]="form.invalid" type="submit" (click)="login()">
+            {{ 'Log in' | translate }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  }
+
+  @if (loggingIn) {
+    <mat-card-content class="center-inner">
+      <mat-progress-spinner [color]="'primary'" [mode]="'indeterminate'" />
+    </mat-card-content>
+  }
+</mat-card>

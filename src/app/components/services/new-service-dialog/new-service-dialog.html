@@ -1,0 +1,43 @@
+@if (!creating) {
+  <div>
+    <h2 mat-dialog-title translate>Add new service</h2>
+
+    <mat-dialog-content>
+      <form [formGroup]="form">
+        <mat-form-field style="width: 100%;">
+          <input
+            matInput
+            [placeholder]="'Enter the new service\'s name' | translate"
+            formControlName="name"
+          />
+        </mat-form-field>
+      </form>
+    </mat-dialog-content>
+
+    <mat-dialog-actions>
+      <div class="float-left">
+        <button mat-raised-button color="warn" type="button" (click)="cancel()" translate>
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+      <div class="pull-right-inner">
+        <button
+          mat-raised-button
+          color="primary"
+          type="button"
+          [disabled]="form.invalid"
+          (click)="addService()"
+          translate
+        >
+          {{ 'Add' | translate }}
+        </button>
+      </div>
+    </mat-dialog-actions>
+  </div>
+}
+
+@if (creating) {
+  <div class="center-inner">
+    <mat-progress-spinner [color]="'primary'" [mode]="'indeterminate'" />
+  </div>
+}

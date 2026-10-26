@@ -1,0 +1,53 @@
+<mat-card>
+  <h2 translate>Publish on topic</h2>
+  <mat-card-content>
+    @if (topicParams) {
+      <json-editor [(ngModel)]="topicParams" [config]="{ mode: 'code' }" />
+    }
+
+    <form
+      [formGroup]="form"
+      style="margin-top: 20px; display: flex; justify-content: space-between;"
+    >
+      <mat-form-field style="width: 40%;">
+        <input matInput [placeholder]="'Topic' | translate" formControlName="topic" />
+      </mat-form-field>
+      <div style="width: 40%;">
+        <button mat-raised-button [disabled]="form.invalid" color="primary" type="button" (click)="publish()" translate>
+          {{ 'Publish' | translate }}
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<mat-card>
+  <h2 translate>Subscribe to a topic</h2>
+  <mat-card-content>
+    <form [formGroup]="formSubscribe" style="display: flex; justify-content: space-between;">
+      <mat-form-field style="width: 40%;">
+        <input matInput [placeholder]="'Topic' | translate" formControlName="topic" [disabled]="subscribed" />
+      </mat-form-field>
+      <div style="width: 40%;">
+        <button
+          mat-raised-button
+          [disabled]="formSubscribe.invalid || subscribed"
+          color="primary"
+          type="button"
+          (click)="subscribe()"
+          translate
+        >
+          {{ 'Subscribe' | translate }}
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+@for (message of messages; track $index) {
+<mat-card>
+  <mat-card-content>
+    <pre>{{ message }}</pre>
+  </mat-card-content>
+</mat-card>
+}

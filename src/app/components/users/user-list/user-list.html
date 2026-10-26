@@ -1,0 +1,57 @@
+<div class="filter-table-header">
+  <mat-form-field>
+    <input matInput [placeholder]="'Filter users' | translate" [formControl]="prefix" />
+  </mat-form-field>
+</div>
+
+<mat-card>
+  <mat-card-content>
+    <mat-table #table [dataSource]="dataSource">
+      <ng-container matColumnDef="actions">
+        <mat-header-cell *matHeaderCellDef style="flex: 0.75;"></mat-header-cell>
+        <mat-cell *matCellDef="let row" style="flex: 0.75;">
+          <button mat-icon-button type="button" [routerLink]="'/users/' + row.User">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button mat-icon-button type="button" (click)="userDelete(row.User)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="username">
+        <mat-header-cell *matHeaderCellDef style="flex: 5;" translate> Username </mat-header-cell>
+        <mat-cell *matCellDef="let row" style="flex: 5;"> {{ row.User }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="maxSessions">
+        <mat-header-cell *matHeaderCellDef translate> Max Sessions </mat-header-cell>
+        <mat-cell *matCellDef="let row"> {{ row.MaxSessions }} </mat-cell>
+      </ng-container>
+
+      <ng-container matColumnDef="enabled">
+        <mat-header-cell *matHeaderCellDef translate> Enabled </mat-header-cell>
+        <mat-cell *matCellDef="let row">
+          <button mat-icon-button type="button" (click)="setDisabled(row.User, !row.Disabled)">
+            @if (!row.Disabled) {
+              <mat-icon>check_circle</mat-icon>
+            }
+            @if (row.Disabled) {
+              <mat-icon>cancel</mat-icon>
+            }
+          </button>
+        </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+    </mat-table>
+
+    <mat-paginator #paginator [length]="0" [pageIndex]="0" [pageSize]="5" [pageSizeOptions]="[5, 10, 25, 100]">
+    </mat-paginator>
+  </mat-card-content>
+</mat-card>
+
+<button mat-fab class="add-user-button" type="button" (click)="openUserCreateDialog()">
+  <mat-icon>add</mat-icon>
+</button>

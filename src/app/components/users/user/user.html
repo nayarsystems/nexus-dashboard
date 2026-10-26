@@ -1,0 +1,257 @@
+@if (user(); as u) {
+  <mat-card>
+    <h2 style="margin: 0;">{{ 'User' | translate }}: {{ u.User }}</h2>
+
+    <mat-card-content>
+      <div class="mat-table" role="grid">
+        <div class="mat-row" role="row">
+          <div class="mat-header-cell mat-column-username" role="columnheader" style="flex: 4;" translate>
+            Username
+          </div>
+          <div class="mat-header-cell mat-column-maxSessions" role="columnheader" translate>
+            Max Sessions
+          </div>
+          <div class="mat-header-cell mat-column-maxSessions" role="columnheader" translate>
+            Actual sessions
+          </div>
+          <div class="mat-header-cell mat-column-enabled" role="columnheader" translate>
+            Enabled
+          </div>
+        </div>
+
+        <div class="mat-row" role="row">
+          <div class="mat-cell mat-column-username" role="gridcell" style="flex: 4;">
+            {{ u.User }}
+          </div>
+          <div class="mat-cell mat-column-maxSessions" role="gridcell">
+            {{ u.MaxSessions }}
+          </div>
+          <div class="mat-cell mat-column-maxSessions" role="gridcell">
+            @if (sessions()) {
+              <span>{{ sessions()!.N }}</span>
+            }
+            @if (!sessions()) {
+              <span>0</span>
+            }
+          </div>
+          <div class="mat-cell mat-column-enabled" role="gridcell">
+            <button mat-icon-button type="button" (click)="toggleDisabled()">
+              @if (!u.Disabled) {
+                <mat-icon>check_circle</mat-icon>
+              }
+              @if (u.Disabled) {
+                <mat-icon>cancel</mat-icon>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div label="Tags">
+        <h3 translate>Tags</h3>
+        <div style="display: flex; flex-wrap: wrap;">
+          <pre style="flex: 1;">{{ tags() }}</pre>
+          <div style="flex: 1;">
+            <mat-list>
+              @for (key of u.Tags | keys; track key) {
+                <div>
+                  <h2 mat-subheader>{{ 'Tags on path' | translate }}: "{{ key }}"</h2>
+                  @for (value of u.Tags[key] | keys; track value) {
+                    <mat-list-item>
+                      <button mat-icon-button type="button" (click)="deleteTag(key, value)">
+                        <mat-icon mat-list-icon>delete</mat-icon>
+                      </button>
+
+                      <p>{{ value }}: {{ format(u.Tags[key][value]) }}</p>
+                    </mat-list-item>
+                  }
+                </div>
+              }
+            </mat-list>
+          </div>
+        </div>
+      </div>
+
+      <div label="Add tags">
+        <h3 translate>Add tags</h3>
+        <div style="margin-top: 20px;">
+          <json-editor [(ngModel)]="tagValue" [config]="{ mode: 'code' }" />
+        </div>
+
+        <form
+          [formGroup]="addTagsForm"
+          style="margin-top: 20px; display: flex; justify-content: space-between;"
+        >
+          <mat-form-field style="width: 30%;">
+            <input matInput [placeholder]="'Path' | translate" formControlName="path" />
+          </mat-form-field>
+          <mat-form-field style="width: 30%;">
+            <input matInput [placeholder]="'Tag' | translate" formControlName="tag" />
+          </mat-form-field>
+          <div style="width: 30%;">
+            <button mat-raised-button [disabled]="addTagsForm.invalid" color="primary" type="button" (click)="addTag()">
+              {{ 'Add tags' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div label="Expanded tags">
+        <h3 translate>Expanded tags</h3>
+        <pre>{{ effectivetags() }}</pre>
+      </div>
+
+      <div label="Templates">
+        <h3 translate>Templates</h3>
+        <mat-list>
+          @for (template of u.Templates; track template) {
+            <mat-list-item>
+              <button mat-icon-button type="button" [routerLink]="'/users/' + template">
+                <mat-icon mat-list-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button type="button" (click)="deleteTemplate(template)">
+                <mat-icon mat-list-icon>delete</mat-icon>
+              </button>
+              <p>{{ template }}</p>
+            </mat-list-item>
+          }
+          <mat-list-item style="margin-top: 20px;">
+            <form [formGroup]="formTemplate">
+              <button mat-icon-button type="button" [disabled]="formTemplate.invalid" (click)="addTemplate()">
+                <mat-icon mat-list-icon>add</mat-icon>
+              </button>
+
+              <mat-form-field>
+                <input matInput [placeholder]="'Add template' | translate" formControlName="template" />
+              </mat-form-field>
+            </form>
+          </mat-list-item>
+        </mat-list>
+      </div>
+
+      <div label="White list">
+        <h3 translate>White list</h3>
+        <mat-list>
+          @for (ip of u.Whitelist; track $index) {
+            <mat-list-item>
+              <button mat-icon-button type="button" (click)="deleteWhitelist(ip)">
+                <mat-icon mat-list-icon>delete</mat-icon>
+              </button>
+              <p>{{ ip }}</p>
+            </mat-list-item>
+          }
+          <mat-list-item style="margin-top: 20px;">
+            <form [formGroup]="formWhitelist">
+              <button mat-icon-button type="button" [disabled]="formWhitelist.invalid" (click)="addWhitelist()">
+                <mat-icon mat-list-icon>add</mat-icon>
+              </button>
+
+              <mat-form-field>
+                <input matInput [placeholder]="'Add white list IP' | translate" formControlName="ip" />
+              </mat-form-field>
+            </form>
+          </mat-list-item>
+        </mat-list>
+      </div>
+
+      <div label="Black list">
+        <h3 translate>Black list</h3>
+        <mat-list>
+          @for (ip of u.Blacklist; track $index) {
+            <mat-list-item>
+              <button mat-icon-button type="button" (click)="deleteBlacklist(ip)">
+                <mat-icon mat-list-icon>delete</mat-icon>
+              </button>
+              <p>{{ ip }}</p>
+            </mat-list-item>
+          }
+          <mat-list-item style="margin-top: 20px;">
+            <form [formGroup]="formBlacklist">
+              <button mat-icon-button type="button" [disabled]="formBlacklist.invalid" (click)="addBlacklist()">
+                <mat-icon mat-list-icon>add</mat-icon>
+              </button>
+
+              <mat-form-field>
+                <input matInput [placeholder]="'Add black list IP' | translate" formControlName="ip" />
+              </mat-form-field>
+            </form>
+          </mat-list-item>
+        </mat-list>
+      </div>
+
+      <div label="Edit">
+        <h3 translate>Edit</h3>
+        @if (!reloading()) {
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+          <div style="flex: 1; padding: 10px;">
+            <h3 translate>Try password</h3>
+            <form [formGroup]="tryPasswordForm">
+              <mat-form-field style="width: 100%">
+                <input matInput placeholder="Password *" formControlName="password" type="password" />
+              </mat-form-field>
+              <div>
+                <button
+                  mat-raised-button
+                  [disabled]="tryPasswordForm.invalid"
+                  (click)="tryPassword()"
+                  color="primary"
+                  type="button"
+                >
+                  {{ 'Submit' | translate }}
+                </button>
+              </div>
+            </form>
+
+            <h3 translate>Edit password</h3>
+            <form [formGroup]="formEditPassword">
+              <mat-form-field style="width: 100%">
+                <input matInput placeholder="Password *" formControlName="password" type="password" />
+              </mat-form-field>
+              <mat-form-field style="width: 100%">
+                <input matInput placeholder="Confirm password *" formControlName="confirmPassword" type="password" />
+              </mat-form-field>
+
+              <div>
+                <button
+                  mat-raised-button
+                  [disabled]="formEditPassword.invalid"
+                  (click)="editPassword()"
+                  color="primary"
+                  type="button"
+                >
+                  {{ 'Submit' | translate }}
+                </button>
+              </div>
+            </form>
+          </div>
+          <div style="flex: 1; padding: 10px;">
+            <h3 translate>Edit maximum sessions</h3>
+            <form [formGroup]="editMaxsessionsForm">
+              <mat-form-field style="width: 100%">
+                <input matInput placeholder="Max sessions *" formControlName="maxSessions" type="number" />
+              </mat-form-field>
+              <div>
+                <button
+                  mat-raised-button
+                  [disabled]="editMaxsessionsForm.invalid"
+                  (click)="editMaxsessions()"
+                  color="primary"
+                  type="button"
+                >
+                  {{ 'Submit' | translate }}
+                </button>
+              </div>
+            </form>
+          </div>
+          </div>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+}
+
+@if (!user()) {
+  <mat-card>
+    <p translate>User does not exist</p>
+  </mat-card>
+}

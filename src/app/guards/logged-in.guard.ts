@@ -1,26 +1,15 @@
-import { Injectable } from '@angular/core';
-import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
-import { EventBusService } from '../services/event-bus.service';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
 
-@Injectable()
-export class LoggedInGuard implements CanActivate {
-  logged: boolean;
+import { NexusService } from '../services/nexus';
 
-  constructor(private bus: EventBusService, private router: Router) {
-  }
+export const loggedInGuard: CanActivateFn = () => {
+  const nexus = inject(NexusService);
+  const router = inject(Router);
 
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
-    if (state.url !== '' && !this.logged) {
-      this.router.navigate(['/']);
-      return false;
-    }
+  if (nexus.isLogged()) {
     return true;
   }
-
-  listenEventBus() {
-    this.bus.listen('logged').subscribe((result) => {
-      this.logged = result.value;
-    });
-  }
-
-}
+  router.navigate(['/login']);
+  return false;
+};

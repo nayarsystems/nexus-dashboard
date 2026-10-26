@@ -1,4 +1,7 @@
-// Typings reference file, you can add your own global typings here
-// https://www.typescriptlang.org/docs/handbook/writing-declaration-files.html
+// Globals loaded from public/assets via index.html.
+// nxjs.min.js is the Nexus browser client (no typings available).
+declare var nexus: any;
 
-declare var System: any;
+// json-editor (https://github.com/json-editor/json-editor), loaded from the
+// jsdelivr CDN in index.html exactly like the legacy app did.
+declare var JSONEditor: any;

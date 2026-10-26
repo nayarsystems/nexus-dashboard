@@ -1,0 +1,37 @@
+.example-headers-align .mat-expansion-panel-header-title,
+.example-headers-align .mat-expansion-panel-header-description {
+  flex-basis: 0;
+}
+
+.example-headers-align .mat-expansion-panel-header-description {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.services-list .services-item {
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+}
+
+.services-list .services-item.flex-3 {
+  flex: 3;
+}
+
+mat-accordion.example-headers-align {
+  display: block;
+  margin: 20px;
+}
+
+.example-headers-align .mat-expansion-panel {
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+.pre_field {
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}

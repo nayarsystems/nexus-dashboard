@@ -1,0 +1,68 @@
+<mat-card>
+  <h2>Pull</h2>
+  <mat-card-content>
+    <form [formGroup]="form" style="margin-top: 20px; display: flex; justify-content: space-between;">
+      <mat-form-field style="width: 40%;">
+        <input matInput [placeholder]="'Path' | translate" formControlName="path" />
+      </mat-form-field>
+      <div style="width: 40%;">
+        <button mat-raised-button [disabled]="form.invalid || waiting" color="primary" type="button" (click)="pull()">
+          Pull
+        </button>
+      </div>
+    </form>
+
+    @if (waiting && !taskstring) {
+      <mat-spinner />
+    }
+    @if (taskstring) {
+      <div>
+        <h3 translate>Task received</h3>
+        <pre>{{ taskstring }}</pre>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
+
+@if (waiting && taskstring) {
+  <mat-card>
+    <h2 translate>Response to task</h2>
+
+    <mat-radio-group [(ngModel)]="resultOrErrorValue">
+      <mat-radio-button value="result">{{ 'Result' | translate }}</mat-radio-button>
+      <mat-radio-button value="error">{{ 'Error' | translate }}</mat-radio-button>
+    </mat-radio-group>
+
+    @if (resultOrErrorValue === 'result') {
+      <div>
+        <json-editor [(ngModel)]="result" [config]="{ mode: 'code' }" />
+        <button mat-raised-button color="primary" type="button" (click)="sendResult()">
+          {{ 'Submit' | translate }}
+        </button>
+      </div>
+    }
+
+    @if (resultOrErrorValue === 'error') {
+      <div>
+        <json-editor [(ngModel)]="errordata" [config]="{ mode: 'code' }" />
+        <form [formGroup]="errorForm" style="margin-top: 20px;">
+          <mat-form-field style="width: 100%">
+            <input matInput placeholder="Code *" formControlName="code" type="number" />
+          </mat-form-field>
+          <mat-form-field style="width: 100%">
+            <input matInput placeholder="Message *" formControlName="message" />
+          </mat-form-field>
+          <button
+            mat-raised-button
+            color="primary"
+            type="button"
+            [disabled]="errorForm.invalid"
+            (click)="sendError()"
+          >
+            {{ 'Submit' | translate }}
+          </button>
+        </form>
+      </div>
+    }
+  </mat-card>
+}

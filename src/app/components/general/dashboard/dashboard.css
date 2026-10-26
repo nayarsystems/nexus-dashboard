@@ -1,0 +1,35 @@
+.dashboard-card {
+  height: 100%;
+  width: 100%;
+  text-align: center;
+}
+
+/* M3 card chrome is taller than the M2 one the 2019 layout was designed
+   against; compact it so the counter and caption fit the 200px tile. */
+.dashboard-card .mat-mdc-card-header {
+  padding: 8px 8px 0;
+}
+
+.dashboard-card .mat-mdc-card-content {
+  padding: 0 8px 8px;
+}
+
+.dashboard-card h2 {
+  font-size: 3em;
+  margin-bottom: 15px;
+}
+
+.dashboard-card h3 {
+  margin: 0 0 10px 0;
+}
+
+.dashboard-card p {
+  font-size: 1.5em;
+  margin: 10px 0 0 0;
+}
+
+.dashboard-card .spinner {
+  width: 55px;
+  height: 55px;
+  margin: 0 auto;
+}

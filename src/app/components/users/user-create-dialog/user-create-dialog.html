@@ -1,0 +1,53 @@
+@if (!creating) {
+  <div>
+    <h2 mat-dialog-title translate>Create new user</h2>
+
+    <mat-dialog-content>
+      <form [formGroup]="form">
+        <mat-form-field style="width: 100%;">
+          <input
+            matInput
+            [placeholder]="'Enter the new user\'s name' | translate"
+            formControlName="user"
+          />
+        </mat-form-field>
+
+        <mat-form-field style="width: 100%;">
+          <input
+            matInput
+            [placeholder]="'Enter the new user\'s password' | translate"
+            [type]="hide ? 'password' : 'text'"
+            formControlName="password"
+          />
+          <mat-icon matSuffix (click)="hide = !hide">{{ hide ? 'visibility' : 'visibility_off' }}</mat-icon>
+        </mat-form-field>
+      </form>
+    </mat-dialog-content>
+
+    <mat-dialog-actions>
+      <div class="float-left">
+        <button mat-raised-button color="warn" type="button" (click)="cancel()" translate>
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+      <div class="pull-right-inner">
+        <button
+          mat-raised-button
+          color="primary"
+          type="button"
+          [disabled]="form.invalid"
+          (click)="createUser()"
+          translate
+        >
+          {{ 'Create' | translate }}
+        </button>
+      </div>
+    </mat-dialog-actions>
+  </div>
+}
+
+@if (creating) {
+  <div class="center-inner">
+    <mat-progress-spinner [color]="'primary'" [mode]="'indeterminate'" />
+  </div>
+}

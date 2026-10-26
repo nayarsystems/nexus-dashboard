@@ -1,0 +1,18 @@
+<h2 mat-dialog-title>Are you sure?</h2>
+
+<mat-dialog-content>
+  <p>{{ data.text }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="float-left">
+    <button mat-raised-button color="warn" type="button" (click)="cancel()">
+      Cancel
+    </button>
+  </div>
+  <div class="pull-right-inner">
+    <button mat-raised-button color="primary" type="button" (click)="accept()">
+      Accept
+    </button>
+  </div>
+</mat-dialog-actions>
