@@ -1,6 +1,6 @@
 # Public-repo CI for nexus-dashboard.
 #
-# Build flow: merges into an epic/** branch build and publish the image,
+# Build flow: merges into the integration branch build and publish the image,
 # then notify the internal pipeline (opaque) which handles deployment.
 # Pull requests (any origin) are build-only: no secrets, no OIDC tokens,
 # ephemeral GitHub-hosted runners only.
@@ -9,9 +9,9 @@ name: CI
 
 on:
   push:
-    branches: ["epic/**"]
+    branches: ["integration"]
   pull_request:
-    branches: ["epic/**"]
+    branches: ["integration"]
 
 permissions:
   contents: read
@@ -196,7 +196,7 @@ jobs:
     needs: build
     if: >
       github.event_name == 'push' &&
-      startsWith(github.ref_name, 'epic/')
+      github.ref_name == 'integration'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
