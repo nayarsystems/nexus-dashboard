@@ -162,79 +162,33 @@ jobs:
         run: docker run --rm nexus-dashboard:test npm test
 
   build:
-    name: Build & Push
+    name: Build
     needs: [detect-changes, secret-scan, test]
     if: >
       needs.detect-changes.outputs.web_changed == 'true' &&
       needs.secret-scan.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: deploy-int
-    permissions:
-      contents: read
-      id-token: write
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Determine image tag
-        id: tag
-        env:
-          SHA: ${{ github.sha }}
-        run: echo "tag=$(echo "$SHA" | cut -c1-7)" >> "$GITHUB_OUTPUT"
-
-      - name: Auth to Google Cloud
-        id: auth
-        if: github.event_name == 'push'
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
-        with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
-          token_format: access_token
-
-      - name: Login to Artifact Registry
-        if: github.event_name == 'push'
-        env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
-        run: |
-          echo "$ACCESS_TOKEN" | docker login "${IMAGE%%/*}" \
-            --username oauth2accesstoken --password-stdin
-
-      - name: Build (and push on merge)
-        env:
-          TAG: ${{ steps.tag.outputs.tag }}
-          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
-          PUSH: ${{ github.event_name == 'push' }}
-          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+      - name: Build (compile check)
         run: |
           set -euo pipefail
-          if [ "$PUSH" != "true" ]; then
-            NEXUS_URL="${NEXUS_URL:-ws://ci-build-check.invalid}"
-          fi
-          ARGS=("--build-arg" "ENV=int"
-                "--build-arg" "NEXUS_URL=$NEXUS_URL"
-                "--cache-from" "type=gha" "--cache-to" "type=gha,mode=max"
-                "--provenance=false"
-                "-t" "${IMAGE}:${TAG}")
-          if [ "$PUSH" = "true" ]; then
-            ARGS+=(--push)
-          fi
-          docker buildx build "${ARGS[@]}" .
+          docker buildx build \
+            --build-arg ENV=int \
+            --build-arg NEXUS_URL=ws://ci-build-check.invalid \
+            --cache-from type=gha --cache-to type=gha,mode=max \
+            --provenance=false \
+            -t nexus-dashboard:build-check .
 
       - name: Summary
         if: always()
-        env:
-          TAG: ${{ steps.tag.outputs.tag }}
-          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
-          PUSH: ${{ github.event_name == 'push' }}
         run: |
           {
             echo "## Build"
-            echo "- image: \`${IMAGE}:${TAG}\`"
-            echo "- pushed: \`$PUSH\` (false = build-only PR check)"
+            echo "- compile check ok (local image, nothing published)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify chat on failure
@@ -248,16 +202,59 @@ jobs:
             -d "$(jq -n --arg t "❌ nexus-dashboard CI failed (job: $JOB_NAME)" --arg u "$RUN_URL" '{text: "\($t)\n\($u)"}')" \
             "$CHAT_WEBHOOK_URL" || true
 
-  trigger-deploy:
-    name: Trigger deploy
+  publish-deploy:
+    name: Publish & Deploy
     needs: build
     if: >
       github.event_name == 'push' &&
       startsWith(github.ref_name, 'epic/')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+
     environment: deploy-int
+    permissions:
+      contents: read
+      id-token: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Determine image tag
+        id: tag
+        env:
+          SHA: ${{ github.sha }}
+        run: echo "tag=$(echo "$SHA" | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Auth to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Login to Artifact Registry
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
+        run: |
+          echo "$ACCESS_TOKEN" | docker login "${IMAGE%%/*}" \
+            --username oauth2accesstoken --password-stdin
+
+      - name: Publish image
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --build-arg ENV=int \
+            --build-arg NEXUS_URL="$NEXUS_URL" \
+            --cache-from type=gha \
+            --provenance=false \
+            -t "${IMAGE}:${TAG}" --push .
+
       - name: Mint app token
         id: app-token
         uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
@@ -271,7 +268,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TARGET: ${{ secrets.DEPLOY_REPO }}
-          TAG: ${{ needs.build.outputs.tag }}
+          TAG: ${{ steps.tag.outputs.tag }}
           SOURCE_SHA: ${{ github.sha }}
           BRANCH: ${{ github.ref_name }}
           SUBJECT: ${{ github.event.head_commit.message }}
@@ -296,18 +293,19 @@ jobs:
       - name: Summary
         if: always()
         env:
-          TAG: ${{ needs.build.outputs.tag }}
+          TAG: ${{ steps.tag.outputs.tag }}
         run: |
           {
-            echo "## Deploy"
-            echo "- dispatch sent for image tag \`${TAG}\`"
+            echo "## Publish & Deploy"
+            echo "- image tag: \`${TAG}\`"
+            echo "- dispatch sent"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify chat on failure
         if: failure()
         env:
           CHAT_WEBHOOK_URL: ${{ secrets.CHAT_WEBHOOK_URL }}
-          JOB_NAME: trigger-deploy
+          JOB_NAME: publish-deploy
           RUN_URL: https://github.com/nayarsystems/nexus-dashboard/actions/runs/${{ github.run_id }}
         run: |
           curl -sf -X POST -H 'Content-Type: application/json' \
