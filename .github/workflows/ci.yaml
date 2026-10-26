@@ -212,7 +212,13 @@ jobs:
         id: tag
         env:
           SHA: ${{ github.sha }}
-        run: echo "tag=$(echo "$SHA" | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          TAG=$(echo "$SHA" | cut -c1-7)
+          # Registry tags are immutable: suffix re-runs so they never
+          # collide with a tag already pushed by a previous attempt.
+          [ "$RUN_ATTEMPT" -gt 1 ] && TAG="${TAG}-a${RUN_ATTEMPT}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Auth to Google Cloud
         id: auth
