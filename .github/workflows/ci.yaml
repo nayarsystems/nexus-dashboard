@@ -191,17 +191,6 @@ jobs:
             echo "- compile check ok (local image, nothing published)"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Notify chat on failure
-        if: failure()
-        env:
-          CHAT_WEBHOOK_URL: ${{ secrets.CHAT_WEBHOOK_URL }}
-          JOB_NAME: build
-          RUN_URL: https://github.com/nayarsystems/nexus-dashboard/actions/runs/${{ github.run_id }}
-        run: |
-          curl -sf -X POST -H 'Content-Type: application/json' \
-            -d "$(jq -n --arg t "❌ nexus-dashboard CI failed (job: $JOB_NAME)" --arg u "$RUN_URL" '{text: "\($t)\n\($u)"}')" \
-            "$CHAT_WEBHOOK_URL" || true
-
   publish-deploy:
     name: Publish & Deploy
     needs: build
@@ -304,10 +293,9 @@ jobs:
       - name: Notify chat on failure
         if: failure()
         env:
-          CHAT_WEBHOOK_URL: ${{ secrets.CHAT_WEBHOOK_URL }}
-          JOB_NAME: publish-deploy
-          RUN_URL: https://github.com/nayarsystems/nexus-dashboard/actions/runs/${{ github.run_id }}
-        run: |
-          curl -sf -X POST -H 'Content-Type: application/json' \
-            -d "$(jq -n --arg t "❌ nexus-dashboard CI failed (job: $JOB_NAME)" --arg u "$RUN_URL" '{text: "\($t)\n\($u)"}')" \
-            "$CHAT_WEBHOOK_URL" || true
+          GH_JOB_NAME: publish-deploy
+          GH_SHA: ${{ github.sha }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_RUN_URL: https://github.com/nayarsystems/nexus-dashboard/actions/runs/${{ github.run_id }}
+          GH_WEBHOOK: ${{ secrets.CHAT_WEBHOOK_URL }}
+        run: bash scripts/ci-notify.sh
