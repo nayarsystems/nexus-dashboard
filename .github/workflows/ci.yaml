@@ -1,0 +1,315 @@
+# Public-repo CI for nexus-dashboard.
+#
+# Build flow: merges into an epic/** branch build and publish the image,
+# then notify the internal pipeline (opaque) which handles deployment.
+# Pull requests (any origin) are build-only: no secrets, no OIDC tokens,
+# ephemeral GitHub-hosted runners only.
+
+name: CI
+
+on:
+  push:
+    branches: ["epic/**"]
+  pull_request:
+    branches: ["epic/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GITLEAKS_VERSION: "8.30.1"
+
+jobs:
+  detect-changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web_changed: ${{ steps.detect.outputs.web_changed }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Determine compare ref
+        id: ref
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$BASE_REF" ]; then
+            echo "ref=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=HEAD~1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect web changes
+        id: detect
+        env:
+          COMPARE_REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          set -eu
+          CHANGED=false
+          # Fail-safe: with no reliable diff range we always build.
+          if git rev-parse --verify -q "$COMPARE_REF" >/dev/null; then
+            if git diff --name-only "$COMPARE_REF...HEAD" \
+              | grep -Eq '^(src/|public/|package(-lock)?\.json|angular\.json|tsconfig|Dockerfile|nginx\.conf|\.dockerignore|\.github/workflows/ci\.yaml)'; then
+              CHANGED=true
+            fi
+          else
+            CHANGED=true
+          fi
+          echo "web_changed=$CHANGED" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        env:
+          WEB_CHANGED: ${{ steps.detect.outputs.web_changed }}
+        run: |
+          {
+            echo "## Detect changes"
+            echo "- web_changed: \`$WEB_CHANGED\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Determine scan range
+        id: range
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -eu
+          RANGE=HEAD
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$BASE_REF" ]; then
+            RANGE="origin/$BASE_REF...HEAD"
+          elif [ "$EVENT_NAME" = "push" ] \
+            && echo "$BEFORE" | grep -Eq '^[0-9a-f]{40}$' \
+            && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "$BEFORE" 2>/dev/null; then
+            RANGE="$BEFORE..HEAD"
+          elif git rev-parse --verify -q HEAD~1 >/dev/null; then
+            RANGE="HEAD~1..HEAD"
+          fi
+          echo "range=$RANGE" >> "$GITHUB_OUTPUT"
+
+      - name: Run gitleaks
+        env:
+          RANGE: ${{ steps.range.outputs.range }}
+          GITLEAKS_VERSION: ${{ env.GITLEAKS_VERSION }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o checksums.txt \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep "linux_x64.tar.gz" checksums.txt | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks detect --source . --log-opts "$RANGE" --redact \
+            --report-format json --report-path /tmp/gitleaks-report.json
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Secret scan"
+            if [ -f /tmp/gitleaks-report.json ]; then
+              LEAKS=$(jq 'length' /tmp/gitleaks-report.json)
+              echo "- leaks: \`$LEAKS\`"
+              jq -r '.[] | "- \(.File):\(.StartLine) — \(.RuleID)"' /tmp/gitleaks-report.json || true
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: Test
+    needs: [detect-changes, secret-scan]
+    if: >
+      needs.detect-changes.outputs.web_changed == 'true' &&
+      needs.secret-scan.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create local environment file
+        run: |
+          set -euo pipefail
+          printf 'export const host = "ws://ci-build-check.invalid";\n' \
+            > src/environments/environment.local.ts
+
+      - name: Build test image
+        run: |
+          set -euo pipefail
+          docker buildx build --target dev --load \
+            --cache-from type=gha --cache-to type=gha,mode=max \
+            -t nexus-dashboard:test .
+
+      - name: Run unit tests
+        run: docker run --rm nexus-dashboard:test npm test
+
+  build:
+    name: Build & Push
+    needs: [detect-changes, secret-scan, test]
+    if: >
+      needs.detect-changes.outputs.web_changed == 'true' &&
+      needs.secret-scan.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: deploy-int
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Determine image tag
+        id: tag
+        env:
+          SHA: ${{ github.sha }}
+        run: echo "tag=$(echo "$SHA" | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Auth to Google Cloud
+        id: auth
+        if: github.event_name == 'push'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Login to Artifact Registry
+        if: github.event_name == 'push'
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
+        run: |
+          echo "$ACCESS_TOKEN" | docker login "${IMAGE%%/*}" \
+            --username oauth2accesstoken --password-stdin
+
+      - name: Build (and push on merge)
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
+          PUSH: ${{ github.event_name == 'push' }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+        run: |
+          set -euo pipefail
+          if [ "$PUSH" != "true" ]; then
+            NEXUS_URL="${NEXUS_URL:-ws://ci-build-check.invalid}"
+          fi
+          ARGS=("--build-arg" "ENV=int"
+                "--build-arg" "NEXUS_URL=$NEXUS_URL"
+                "--cache-from" "type=gha" "--cache-to" "type=gha,mode=max"
+                "--provenance=false"
+                "-t" "${IMAGE}:${TAG}")
+          if [ "$PUSH" = "true" ]; then
+            ARGS+=(--push)
+          fi
+          docker buildx build "${ARGS[@]}" .
+
+      - name: Summary
+        if: always()
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          IMAGE: ${{ vars.REGISTRY }}/${{ vars.IMAGE_NAME }}
+          PUSH: ${{ github.event_name == 'push' }}
+        run: |
+          {
+            echo "## Build"
+            echo "- image: \`${IMAGE}:${TAG}\`"
+            echo "- pushed: \`$PUSH\` (false = build-only PR check)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify chat on failure
+        if: failure()
+        env:
+          CHAT_WEBHOOK_URL: ${{ secrets.CHAT_WEBHOOK_URL }}
+          JOB_NAME: build
+          RUN_URL: https://github.com/nayarsystems/nexus-dashboard/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sf -X POST -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg t "❌ nexus-dashboard CI failed (job: $JOB_NAME)" --arg u "$RUN_URL" '{text: "\($t)\n\($u)"}')" \
+            "$CHAT_WEBHOOK_URL" || true
+
+  trigger-deploy:
+    name: Trigger deploy
+    needs: build
+    if: >
+      github.event_name == 'push' &&
+      startsWith(github.ref_name, 'epic/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: deploy-int
+    steps:
+      - name: Mint app token
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ secrets.DEPLOY_REPO }}
+          permission-contents: write
+
+      - name: Dispatch internal deploy
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET: ${{ secrets.DEPLOY_REPO }}
+          TAG: ${{ needs.build.outputs.tag }}
+          SOURCE_SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+          SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          PAYLOAD=$(jq -n \
+            --arg et "web-deploy" \
+            --arg app "nexus-dashboard" \
+            --arg tag "$TAG" \
+            --arg sha "$SOURCE_SHA" \
+            --arg branch "$BRANCH" \
+            --arg subject "$SUBJECT" \
+            '{event_type: $et,
+              client_payload: {app: $app, tag: $tag, sha: $sha,
+              branch: $branch, subject: $subject}}')
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$TARGET/dispatches" \
+            -d "$PAYLOAD"
+
+      - name: Summary
+        if: always()
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          {
+            echo "## Deploy"
+            echo "- dispatch sent for image tag \`${TAG}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify chat on failure
+        if: failure()
+        env:
+          CHAT_WEBHOOK_URL: ${{ secrets.CHAT_WEBHOOK_URL }}
+          JOB_NAME: trigger-deploy
+          RUN_URL: https://github.com/nayarsystems/nexus-dashboard/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sf -X POST -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg t "❌ nexus-dashboard CI failed (job: $JOB_NAME)" --arg u "$RUN_URL" '{text: "\($t)\n\($u)"}')" \
+            "$CHAT_WEBHOOK_URL" || true
