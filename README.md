@@ -1,31 +1,39 @@
-# NexusManager
+# Nexus Dashboard
 
-This project was generated with [angular-cli](https://github.com/angular/angular-cli) version 1.0.0-beta.19-3.
+Internal dashboard for the Nexus instance: sessions/tasks charts,
+user and task lists. Angular 22 SPA, served by nginx.
 
-## Development server
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+## Develop (docker only — no Node on the host)
 
-## Code scaffolding
+```bash
+docker compose up dev       # http://localhost:4200, hot reload
+docker compose build dev    # only after changing package.json
+```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive/pipe/service/class`.
+The dev server needs your local endpoint file first, set
+the Nexus ws URL there:
+
+```bash
+cp src/environments/environment.local.ts.example \
+   src/environments/environment.local.ts
+```
+
+The legacy `nxjs.js` browser client is loaded as a global from
+`public/assets`.
 
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
+The nexus URL is never committed.
 
-## Running unit tests
+```bash
+docker build --build-arg ENV=int --build-arg NEXUS_URL=ws://… \
+  -t nexus-dashboard .                                   # integration
+docker build --build-arg ENV=production --build-arg NEXUS_URL=wss://… \
+  -t nexus-dashboard .                                   # production
+```
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Test
 
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-Before running the tests make sure you are serving the app via `ng serve`.
-
-## Deploying to Github Pages
-
-Run `ng github-pages:deploy` to deploy to Github Pages.
-
-## Further help
-
-To get more help on the `angular-cli` use `ng --help` or go check out the [Angular-CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+```bash
+docker compose run --rm dev npm test
+```
